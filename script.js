@@ -1,4 +1,4 @@
-const tg = window.Telegram.WebApp;
+lconst tg = window.Telegram.WebApp;
 tg.ready();
 
 let balance = 0;
@@ -82,13 +82,19 @@ function updateAdCounter() {
   }
 }
 
-// নতুন এড সিস্টেম – ৩০ সেকেন্ড কাউন্টডাউন
+// নতুন এড সিস্টেম – SDK চেক + ফলব্যাক
 let countdownInterval = null;
 function showAd() {
   const btn = document.getElementById("showAdBtn");
   if (!btn || btn.disabled) return;
 
-  if (window.show_10232544) window.show_10232544();
+  // SDK চেক
+  if (window.show_10232544) {
+    window.show_10232544();
+  } else {
+    // ফলব্যাক: সিম্পল অ্যালার্ট বা লোডিং
+    alert("এড লোড হচ্ছে... ৩০ সেকেন্ড দেখুন।");
+  }
 
   btn.disabled = true;
   btn.textContent = "এড দেখছে... ৩০";
