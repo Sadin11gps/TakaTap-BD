@@ -8,31 +8,39 @@ let username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.fir
 let refFrom = new URLSearchParams(window.location.search).get("start");
 const BOT_TOKEN = "7964136906:AAEfh7dxAD4Jd08GDFVWzs9q1_kx667fgyA";
 
-// লোড সেভড ডেটা
-const saved = localStorage.getItem("takatap_" + userId);
-if (saved) {
-  const data = JSON.parse(saved);
-  balance = data.balance || 0;
-  refCount = data.refCount || 0;
-}
+// DOM লোড হলে চালাও
+document.addEventListener('DOMContentLoaded', function() {
+  // লোড সেভড ডেটা
+  const saved = localStorage.getItem("takatap_" + userId);
+  if (saved) {
+    const data = JSON.parse(saved);
+    balance = data.balance || 0;
+    refCount = data.refCount || 0;
+  }
 
-// রেফারেল বোনাস
-if (refFrom && refFrom != userId && !localStorage.getItem("ref_awarded_" + userId)) {
-  balance += 50;
-  refCount += 1;
-  localStorage.setItem("ref_awarded_" + userId, "true");
-  alert("রেফারেল বোনাস! +৫০ পয়েন্ট পেয়েছেন 🎉");
-}
+  // রেফারেল বোনাস
+  if (refFrom && refFrom != userId && !localStorage.getItem("ref_awarded_" + userId)) {
+    balance += 50;
+    refCount += 1;
+    localStorage.setItem("ref_awarded_" + userId, "true");
+    alert("রেফারেল বোনাস! +৫০ পয়েন্ট পেয়েছেন 🎉");
+  }
 
-updateBalance();
-updateAdCounter();
+  updateBalance();
+  updateAdCounter();
+  verifyChannel();
+});
 
 // সব ফাংশন
 function updateBalance() {
-  document.getElementById("balance").textContent = balance.toLocaleString();
-  document.getElementById("wbalance").textContent = balance.toLocaleString();
-  document.getElementById("refCount").textContent = refCount;
-  document.getElementById("refBonus").textContent = (refCount * 50).toLocaleString();
+  const balEl = document.getElementById("balance");
+  const wbalEl = document.getElementById("wbalance");
+  const refEl = document.getElementById("refCount");
+  const bonusEl = document.getElementById("refBonus");
+  if (balEl) balEl.textContent = balance.toLocaleString();
+  if (wbalEl) wbalEl.textContent = balance.toLocaleString();
+  if (refEl) refEl.textContent = refCount;
+  if (bonusEl) bonusEl.textContent = (refCount * 50).toLocaleString();
   localStorage.setItem("takatap_" + userId, JSON.stringify({ balance, refCount }));
 }
 
@@ -43,9 +51,10 @@ function shareRef() {
 
 function openTab(tabId) {
   document.querySelectorAll(".content").forEach(t => t.classList.add("hidden"));
-  document.getElementById(tabId).classList.remove("hidden");
+  const targetTab = document.getElementById(tabId);
+  if (targetTab) targetTab.classList.remove("hidden");
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
+  if (event && event.target) event.target.classList.add("active");
 }
 
 // এড কাউন্টার
@@ -59,24 +68,26 @@ function updateAdCounter() {
     localStorage.setItem("ad_date_" + userId, today);
     localStorage.setItem("ad_count_" + userId, "0");
   }
-  document.getElementById("adCount").textContent = count + " / 10";
-  const btn = document.getElementById("showAdBtn");
-  if (count >= 10) {
-    btn.disabled = true;
-    btn.textContent = "আজকের লিমিট শেষ";
-  } else {
-    btn.disabled = false;
-    btn.textContent = "এড দেখুন (+১০ পয়েন্ট)";
+  const adCountEl = document.getElementById("adCount");
+  const adBtn = document.getElementById("showAdBtn");
+  if (adCountEl) adCountEl.textContent = count + " / 10";
+  if (adBtn) {
+    if (count >= 10) {
+      adBtn.disabled = true;
+      adBtn.textContent = "আজকের লিমিট শেষ";
+    } else {
+      adBtn.disabled = false;
+      adBtn.textContent = "এড দেখুন (+১০ পয়েন্ট)";
+    }
   }
 }
 
-// নতুন এড সিস্টেম – কাউন্টডাউন ৩০ সেকেন্ড
+// নতুন এড সিস্টেম – ৩০ সেকেন্ড কাউন্টডাউন
 let countdownInterval = null;
 function showAd() {
   const btn = document.getElementById("showAdBtn");
-  if (btn.disabled) return;
+  if (!btn || btn.disabled) return;
 
-  // Monetag এড দেখাও
   if (window.show_10232544) window.show_10232544();
 
   btn.disabled = true;
@@ -96,11 +107,10 @@ function showAd() {
       updateAdCounter();
 
       btn.textContent = "এড দেখুন (+১০ পয়েন্ট)";
-      alert("এড দেখার জন্য +১০ পয়েন্ট পেয়েছেন! 🎉");
+      alert("+১০ পয়েন্ট যোগ হয়েছে! 🎉");
     }
   }, 1000);
 
-  // যদি ইউজার ব্যাক করে বা বন্ধ করে দেয়
   setTimeout(() => {
     if (countdownInterval) {
       clearInterval(countdownInterval);
@@ -111,14 +121,16 @@ function showAd() {
 
 // রিয়েল জয়েন চেক
 async function checkMembership(taskId, chatUsername, points, button) {
+  const btn = button;
+  if (!btn) return;
   if (localStorage.getItem("task_done_" + taskId + "_" + userId)) {
-    button.textContent = "সম্পন্ন ✓";
-    button.classList.add("done");
+    btn.textContent = "সম্পন্ন ✓";
+    btn.classList.add("done");
     return;
   }
 
-  button.textContent = "চেক হচ্ছে...";
-  button.disabled = true;
+  btn.textContent = "চেক হচ্ছে...";
+  btn.disabled = true;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot\( {BOT_TOKEN}/getChatMember?chat_id= \){chatUsername}&user_id=${userId}`);
@@ -128,25 +140,28 @@ async function checkMembership(taskId, chatUsername, points, button) {
       balance += points;
       updateBalance();
       localStorage.setItem("task_done_" + taskId + "_" + userId, "true");
-      button.textContent = "সম্পন্ন ✓";
-      button.classList.add("done");
-110      alert(`+${points} পয়েন্ট পেয়েছেন! 🎉`);
+      btn.textContent = "সম্পন্ন ✓";
+      btn.classList.add("done");
+      alert(`+${points} পয়েন্ট পেয়েছেন! 🎉`);
     } else {
-      button.textContent = "চেক করুন";
-      button.disabled = false;
+      btn.textContent = "চেক করুন";
+      btn.disabled = false;
       alert("আপনি এখনো জয়েন করেননি!");
     }
   } catch (e) {
-    button.textContent = "চেক করুন";
-    button.disabled = false;
+    btn.textContent = "চেক করুন";
+    btn.disabled = false;
     alert("ইন্টারনেট সমস্যা। আবার চেষ্টা করুন।");
   }
 }
 
-// উইথড্র + চ্যানেল ভেরিফাই (আগের মতোই)
+// উইথড্র
 function sendWithdraw() {
-  const method = document.getElementById("method").value;
-  const number = document.getElementById("number").value.trim();
+  const methodEl = document.getElementById("method");
+  const numberEl = document.getElementById("number");
+  if (!methodEl || !numberEl) return;
+  const method = methodEl.value;
+  const number = numberEl.value.trim();
   if (!number) return alert("নম্বর / আইডি দিন!");
 
   let min = 0, reward = "";
@@ -162,13 +177,15 @@ function sendWithdraw() {
   alert("রিকোয়েস্ট পাঠানো হয়েছে!");
 }
 
+// চ্যানেল ভেরিফাই
 async function verifyChannel() {
   try {
     const res = await fetch(`https://api.telegram.org/bot\( {BOT_TOKEN}/getChatMember?chat_id=@TakaTapBD_Channel&user_id= \){userId}`);
     const data = await res.json();
     if (data.ok && ["member","administrator","creator"].includes(data.result.status)) {
       document.querySelectorAll(".content").forEach(c => c.classList.remove("hidden"));
-      document.querySelector(".tab-bar").style.display = "flex";
+      const tabBar = document.querySelector(".tab-bar");
+      if (tabBar) tabBar.style.display = "flex";
     } else {
       alert("প্রথমে @TakaTapBD_Channel এ জয়েন করুন!");
       tg.openTelegramLink("https://t.me/TakaTapBD_Channel");
@@ -177,5 +194,3 @@ async function verifyChannel() {
     alert("ভেরিফাই সমস্যা। আবার চেষ্টা করুন।");
   }
 }
-
-verifyChannel();
