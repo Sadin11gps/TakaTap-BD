@@ -1,123 +1,140 @@
-let coins = 0;
-let energy = 1000;
-let level = 1;
-let coinsPerTap = 1;
-let userId = 0;
-let refCode = 0;
-
-const tg = Telegram.WebApp;
+const tg = window.Telegram.WebApp;
 tg.ready();
 
-const urlParams = new URLSearchParams(window.location.search);
-const refFromStart = urlParams.get('start'); // রেফারেল আইডি
-
-if (tg.initDataUnsafe.user) {
-  userId = tg.initDataUnsafe.user.id;
-  document.getElementById('username').textContent = tg.initDataUnsafe.user.first_name;
-  refCode = userId;
-  document.getElementById('refCode').textContent = userId;
-}
+let balance = 0;
+let refCount = 0;
+let userId = tg.initDataUnsafe?.user?.id || 123456;
+let username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.first_name || "User";
+let refFrom = new URLSearchParams(window.location.search).get("start");
 
 // লোড ডেটা
-if (localStorage.getItem('takatap_' + userId)) {
-  const data = JSON.parse(localStorage.getItem('takatap_' + userId));
-  coins = data.coins || 0;
-  energy = data.energy || 1000;
-  level = data.level || 1;
-  coinsPerTap = level;
+const saved = localStorage.getItem("takatap_" + userId);
+if (saved) {
+  const data = JSON.parse(saved);
+  balance = data.balance || 0;
+  refCount = data.refCount || 0;
 }
 
-// রেফারেল বোনাস (যদি রেফারেল লিংক থেকে আসে)
-if (refFromStart && refFromStart != userId) {
-  coins += 500; // নতুন ইউজারকে ৫০০
-  // রেফারারকে পরে ১০% দিবে (ব্যাকএন্ডে)
-  alert("রেফারেল বোনাস! +৫০০৳ পেয়েছেন 🎉");
+// রেফারেল বোনাস
+if (refFrom && refFrom != userId && !localStorage.getItem("ref_awarded_" + userId)) {
+  balance += 50;
+  localStorage.setItem("ref_awarded_" + userId, "true");
+  alert("রেফারেল বোনাস! +৫০ পয়েন্ট পেয়েছেন 🎉");
 }
 
-function updateDisplay() {
-  document.getElementById('coins').textContent = coins.toLocaleString();
-  document.getElementById('energy').textContent = energy;
-  document.getElementById('level').textContent = level;
-  document.getElementById('perTap').textContent = coinsPerTap;
+updateBalance();
+
+// ব্যালেন্স আপডেট
+function updateBalance() {
+  document.getElementById("balance").textContent = balance.toLocaleString();
+  document.getElementById("wbalance").textContent = balance.toLocaleString();
+  document.getElementById("refCount").textContent = refCount;
+  document.getElementById("refBonus").textContent = refCount * 50;
+  localStorage.setItem("takatap_" + userId, JSON.stringify({balance, refCount}));
 }
 
-// চ্যানেল ভেরিফাই চেক
-async function checkMembership() {
-  try {
-    const response = await fetch(`https://api.telegram.org/bot7964136906:AAEfh7dxAD4Jd08GDFVWzs9q1_kx667fgyA/getChatMember?chat_id=@TakaTapBD_Channel&user_id=${userId}`);
-    const data = await response.json();
+// রেফার লিংক শেয়ার
+function shareRef() {
+  const link = `https://t.me/TakaTapBD_bot?start=${userId}`;
+  tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent("🚀 TakaTap BD – প্রতি ট্যাপে পয়েন্ট + রেফারেলে ৫০ পয়েন্ট!\n\nশুরু করুন: " + link)}`);
+}
 
-    if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
-      // সফল – গেম ওপেন করো
-      document.getElementById('verifyScreen').classList.add('hidden');
-      document.getElementById('gameScreen').classList.remove('hidden');
-      updateDisplay();
-      startGame();
-    } else {
-      alert("আপনি এখনো চ্যানেলে জয়েন করেননি!\nজয়েন হয়ে আবার ভেরিফাই করুন।");
-    }
-  } catch (err) {
-    alert("ভেরিফাই করতে সমস্যা হচ্ছে। আবার চেষ্টা করুন।");
+// ট্যাব ওপেন
+function openTab(tabId) {
+  document.querySelectorAll(".content").forEach(t => t.classList.add("hidden"));
+  document.getElementById(tabId).classList.remove("hidden");
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+}
+
+// জয়েন চেক + রিওয়ার্ড (সিম্পল সিস্টেম – পরে অটো API যোগ করা যাবে)
+function checkJoin(btn, taskId, points) {
+  if (localStorage.getItem("task_" + taskId + "_" + userId)) {
+    btn.textContent = "সম্পন্ন ✓";
+    btn.classList.add("done");
+    return;
   }
-}
 
-function startGame() {
-  document.getElementById('coin').addEventListener('click', (e) => {
-    if (energy > 0) {
-      coins += coinsPerTap;
-      energy -= 1;
-      updateDisplay();
-      saveData();
-
-      // পপ আপ
-      const popup = document.createElement('div');
-      popup.textContent = '+' + coinsPerTap + '৳';
-      popup.style.position = 'absolute';
-      popup.style.left = (e.touches ? e.touches[0].clientX : e.clientX) - 30 + 'px';
-      popup.style.top = (e.touches ? e.touches[0].clientY : e.clientY) - 80 + 'px';
-      popup.style.color = '#ffeb3b';
-      popup.style.fontSize = '36px';
-      popup.style.fontWeight = 'bold';
-      popup.style.pointerEvents = 'none';
-      popup.style.animation = 'floatup 1s forwards';
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 1000);
-
-      // লেভেল আপ
-      if (coins >= level * 4000) {
-        level++;
-        coinsPerTap = level;
-        updateDisplay();
-        tg.HapticFeedback.notificationOccurred('success');
-        alert(`লেভেল \( {level} 🎉 প্রতি ট্যাপে \){level} টাকা!`);
+  setTimeout(() => {
+    const done = confirm("জয়েন করেছেন? ✓");
+    if (done) {
+      balance += points;
+      if (taskId.includes("ch") || taskId.includes("gr")) {
+        localStorage.setItem("task_" + taskId + "_" + userId, "done");
       }
+      btn.textContent = "সম্পন্ন ✓";
+      btn.classList.add("done");
+      updateBalance();
+      alert(`+${points} পয়েন্ট যোগ হয়েছে! 🎉`);
     }
-  });
-
-  // এনার্জি রিচার্জ
-  setInterval(() => {
-    if (energy < 1000) {
-      energy += 2;
-      if (energy > 1000) energy = 1000;
-      document.getElementById('energy').textContent = energy;
-    }
-  }, 1000);
-
-  // অ্যানিমেশন
-  const style = document.createElement('style');
-  style.innerHTML = `@keyframes floatup { to { transform: translateY(-120px); opacity: 0; } }`;
-  document.head.appendChild(style);
+  }, 2000);
 }
 
-function saveData() {
-  localStorage.setItem('takatap_' + userId, JSON.stringify({coins, energy, level}));
+// Monetag এড দেখার পর পয়েন্ট (ম্যানুয়াল – পরে অটো করা যাবে)
+setInterval(() => {
+  if (!localStorage.getItem("ad_today_" + userId)) {
+    const seen = confirm("এড দেখেছেন? +১০ পয়েন্ট");
+    if (seen) {
+      balance += 10;
+      localStorage.setItem("ad_today_" + userId, Date.now());
+      updateBalance();
+      alert("+১০ পয়েন্ট পেয়েছেন!");
+    }
+  }
+}, 300000); // প্রতি ৫ মিনিটে একবার চেক
+
+// উইথড্র রিকোয়েস্ট পাঠানো
+function sendWithdraw() {
+  const method = document.getElementById("method").value;
+  const number = document.getElementById("number").value.trim();
+
+  if (!number) return alert("নম্বর / আইডি দিন!");
+
+  let min = 0;
+  let info = "";
+
+  if (method === "bkash" || method === "nagad") {
+    min = 1200;
+    info = "১০০ টাকা (২০০ পয়েন্ট ফি সহ)";
+  } else if (method === "binance") {
+    min = 5000;
+    info = "$4 (কোনো ফি নাই)";
+  } else if (method === "stars") {
+    min = 2000;
+    info = "১০০ Telegram Stars (কোনো ফি নাই)";
+  }
+
+  if (balance < min) return alert(`মিনিমাম ${min} পয়েন্ট লাগবে!`);
+
+  const text = `🔔 নতুন উইথড্র রিকোয়েস্ট\n\n` +
+               `ইউজার: ${username}\n` +
+               `আইডি: ${userId}\n` +
+               `মেথড: ${method.toUpperCase()}\n` +
+               `নম্বর/আইডি: ${number}\n` +
+               `পয়েন্ট: ${balance.toLocaleString()}\n` +
+               `পরিমাণ: ${info}\n\n` +
+               `@TakaTapBD_bot থেকে`;
+
+  tg.openTelegramLink(`https://t.me/7702378694?text=${encodeURIComponent(text)}`);
+  alert("উইথড্র রিকোয়েস্ট পাঠানো হয়েছে! এডমিন ২৪ ঘণ্টার মধ্যে পেমেন্ট করবে।");
 }
 
-function withdraw(method) {
-  if (coins < 50) return alert("মিনিমাম ৫০ টাকা লাগবে!");
-  const num = prompt(`তোমার ${method.toUpperCase()} নম্বর দাও (01xxxxxxxxx):`);
-  if (num && num.length === 11) {
-    tg.openTelegramLink(`https://t.me/TakaTap_PaymentBD?text=উইথড্র%20রিকোয়েস্ট%0Aইউজার:%20\( {tg.initDataUnsafe.user.first_name}%0Aনম্বর:%20 \){num}%0Aমেথড:%20\( {method.toUpperCase()}%0Aপরিমাণ:%20 \){coins}%20টাকা`);
-    alert("রিকোয়েস্ট পাঠানো হয়েছে! ১২-২৪ ঘণ্টায় টাকা পাবেন 🚀");
+// চ্যানেল ভেরিফাই (তোমার আগের চ্যানেল)
+async function verifyChannel() {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot7964136906:AAEfh7dxAD4Jd08GDFVWzs9q1_kx667fgyA/getChatMember?chat_id=@TakaTapBD_Channel&user_id=${userId}`);
+    const data = await res.json();
+    if (data.ok && ["member","administrator","creator"].includes(data.result.status)) {
+      document.querySelectorAll(".content").forEach(c => c.classList.remove("hidden"));
+      document.querySelector(".tab-bar").style.display = "flex";
+    } else {
+      alert("প্রথমে @TakaTapBD_Channel এ জয়েন করুন!");
+      tg.openTelegramLink("https://t.me/TakaTapBD_Channel");
+    }
+  } catch(e) {
+    alert("ভেরিফাই করতে সমস্যা। আবার চেষ্টা করুন।");
   }
 }
+
+// লোড হলে চ্যানেল চেক
+verifyChannel();

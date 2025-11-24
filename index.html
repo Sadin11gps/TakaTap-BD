@@ -2,63 +2,97 @@
 <html lang="bn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>টাকা ট্যাপ - আসল টাকা আর্নিং</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TakaTap BD</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    body { margin:0; background:#006400; font-family:Arial; color:white; text-align:center; height:100vh; overflow:hidden; padding:20px; }
+    body { margin:0; font-family: Arial; background:#0d1b2a; color:white; height:100vh; display:flex; flex-direction:column; }
+    .tab-bar { position:fixed; bottom:0; width:100%; background:#1b263b; display:flex; justify-content:space-around; padding:10px 0; border-top:1px solid #415a77; z-index:999; }
+    .tab-btn { background:none; border:none; color:#778da9; font-size:20px; padding:10px; flex:1; text-align:center; }
+    .tab-btn.active { color:#00ff9d; }
+    .content { flex:1; overflow-y:auto; padding-bottom:80px; padding:20px; }
+    .balance-box { background:#1b263b; padding:20px; border-radius:15px; text-align:center; margin-bottom:20px; }
+    .big-num { font-size:40px; font-weight:bold; color:#00ff9d; }
+    .btn { background:#00ff9d; color:black; border:none; padding:15px; border-radius:12px; font-size:18px; width:100%; margin:10px 0; font-weight:bold; }
+    .task-item { background:#1b263b; padding:15px; border-radius:12px; margin:10px 0; display:flex; justify-content:space-between; align-items:center; }
+    .join-btn { background:#415a77; color:white; padding:8px 15px; border-radius:8px; text-decoration:none; }
+    .join-btn.done { background:#00ff9d; color:black; }
     .hidden { display:none; }
-    h1 { font-size:45px; }
-    button { margin:10px; padding:15px 25px; border:none; border-radius:50px; font-size:18px; color:white; font-weight:bold; }
-    .bkash { background:#E21A70; }
-    .nagad { background:#FF5A00; }
-    .rocket { background:#6A1B9A; }
-    .verify-btn { background:#FFD700; color:black; }
-    .referral { background:#4CAF50; margin-top:20px; padding:15px; border-radius:15px; }
   </style>
 </head>
 <body>
+  <div id="homeTab" class="content">
+    <div class="balance-box">
+      <div>মোট ব্যালেন্স</div>
+      <div class="big-num" id="balance">0</div>
+      <div>পয়েন্ট</div>
+    </div>
+    <div class="balance-box">
+      <div>মোট রেফার</div>
+      <div class="big-num" id="refCount">0</div>
+      <div>জন (+<span id="refBonus">0</span> পয়েন্ট)</div>
+    </div>
 
-<!-- ভেরিফিকেশন স্ক্রিন -->
-<div id="verifyScreen">
-  <h1>টাকা ট্যাপ</h1>
-  <p>গেম খেলতে হলে আমাদের চ্যানেলে জয়েন করুন</p>
-  <br>
-  <a href="https://t.me/TakaTapBD_Channel" target="_blank">
-    <button style="background:#0088cc; padding:15px 40px; font-size:20px;">চ্যানেলে জয়েন করুন</button>
-  </a>
-  <br><br>
-  <button class="verify-btn" onclick="checkMembership()">ভেরিফাই করুন</button>
-  <p style="font-size:14px; margin-top:20px;">জয়েন করার পর ভেরিফাই বাটনে ক্লিক করুন</p>
-</div>
+    <div class="balance-box">
+      <button class="btn" onclick="alert('এই অপশনটি পরবর্তীতে যুক্ত করা হবে')">Telegram Subscription</button>
+    </div>
 
-<!-- মেইন গেম স্ক্রিন -->
-<div id="gameScreen" class="hidden">
-  <h1>টাকা ট্যাপ</h1>
-  <p>স্বাগতম <span id="username">ইউজার</span>!</p>
-
-  <div style="font-size:32px; margin:20px; background:rgba(0,0,0,0.3); padding:15px; border-radius:15px;">
-    মোট ব্যালেন্স: <span id="coins">0</span> ৳
-  </div>
-  <div style="font-size:22px; color:#ffeb3b;">প্রতি ট্যাপে: <span id="perTap">1</span> ৳</div>
-
-  <div id="coin" style="font-size:120px; cursor:pointer; margin:30px;">টাকা</div>
-
-  <div>এনার্জি: <span id="energy">1000</span>/1000</div>
-  <div>লেভেল: <span id="level">1</span></div>
-
-  <!-- রেফারেল লিংক -->
-  <div class="referral">
-    তোমার রেফারেল লিংক:<br>
-    <b>https://t.me/TakaTapBD_Bot?start=<span id="refCode">0</span></b><br>
-    প্রতি রেফারে ৫০০৳ + ১০% লাইফটাইম!
+    <div class="balance-box">
+      <p>রেফার লিংক শেয়ার করুন (প্রতি রেফারে ৫০ পয়েন্ট)</p>
+      <button class="btn" onclick="shareRef()">রেফার লিংক শেয়ার করুন</button>
+    </div>
   </div>
 
-  <button class="bkash" onclick="withdraw('bkash')">বিকাশ</button>
-  <button class="nagad" onclick="withdraw('nagad')">নগদ</button>
-  <button class="rocket" onclick="withdraw('rocket')">রকেট</button>
-</div>
+  <div id="taskTab" class="content hidden">
+    <h2>এড দেখুন – ১০ পয়েন্ট</h2>
+    <div style="background:#1b263b;padding:20px;border-radius:15px;margin:20px 0;">
+      <script src='//libtl.com/sdk.js' data-zone='10232544' data-sdk='show_10232544'></script>
+    </div>
 
-<script src="script.js"></script>
+    <h2>জয়েন করে পয়েন্ট নিন</h2>
+    <div class="task-item">
+      <div>Join Channel – ৩০ পয়েন্ট</div>
+      <a href="https://t.me/amrrdsteam" target="_blank" class="join-btn" data-task="ch1" onclick="checkJoin(this,'ch1',30)">জয়েন করুন</a>
+    </div>
+    <div class="task-item">
+      <div>Join Channel – ৩০ পয়েন্ট</div>
+      <a href="https://t.me/smart_network81" target="_blank" class="join-btn" data-task="ch2" onclick="checkJoin(this,'ch2',30)">জয়েন করুন</a>
+    </div>
+    <div class="task-item">
+      <div>Join Group – ২০ পয়েন্ট</div>
+      <a href="https://t.me/smart_network81_group" target="_blank" class="join-btn" data-task="gr1" onclick="checkJoin(this,'gr1',20)">জয়েন করুন</a>
+    </div>
+    <div class="task-item">
+      <div>Join Group – ২০ পয়েন্ট</div>
+      <a href="https://t.me/+9c4kuOQcVUA4NTc1" target="_blank" class="join-btn" data-task="gr2" onclick="checkJoin(this,'gr2',20)">জয়েন করুন</a>
+    </div>
+  </div>
+
+  <div id="withdrawTab" class="content hidden">
+    <div class="balance-box">
+      <div>উইথড্র করার জন্য ব্যালেন্স</div>
+      <div class="big-num" id="wbalance">0</div>
+      <div>পয়েন্ট</div>
+    </div>
+
+    <select id="method" class="btn" style="background:#1b263b;color:white;">
+      <option value="bkash">Bkash (মিনিমাম ১২০০ পয়েন্ট)</option>
+      <option value="nagad">Nagad (মিনিমাম ১২০০ পয়েন্ট)</option>
+      <option value="binance">Binance (মিনিমাম ৫০০০ পয়েন্ট = $4)</option>
+      <option value="stars">Telegram Stars (২০০০ পয়েন্ট = ১০০ Stars)</option>
+    </select>
+
+    <input type="text" id="number" placeholder="নম্বর / Binance ID" class="btn" style="background:#1b263b;margin-top:10px;">
+
+    <button class="btn" onclick="sendWithdraw()">Withdraw Now</button>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="openTab('homeTab')">Home</button>
+    <button class="tab-btn" onclick="openTab('taskTab')">Task</button>
+    <button class="tab-btn" onclick="openTab('withdrawTab')">Withdraw</button>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
