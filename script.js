@@ -44,18 +44,20 @@ function updateDisplay() {
 // চ্যানেল ভেরিফাই চেক
 async function checkMembership() {
   try {
-    const response = await fetch(`https://api.telegram.org/bot7564105040:AAE3v.../getChatMember?chat_id=@TakaTapBD_Channel&user_id=${userId}`);
+    const response = await fetch(`https://api.telegram.org/bot7964136906:AAEfh7dxAD4Jd08GDFVWzs9q1_kx667fgyA/getChatMember?chat_id=@TakaTapBD_Channel&user_id=${userId}`);
     const data = await response.json();
+
     if (data.ok && (data.result.status === "member" || data.result.status === "administrator" || data.result.status === "creator")) {
+      // সফল – গেম ওপেন করো
       document.getElementById('verifyScreen').classList.add('hidden');
       document.getElementById('gameScreen').classList.remove('hidden');
       updateDisplay();
       startGame();
     } else {
-      alert("আপনি এখনো চ্যানেলে জয়েন করেননি!");
+      alert("আপনি এখনো চ্যানেলে জয়েন করেননি!\nজয়েন হয়ে আবার ভেরিফাই করুন।");
     }
-  } catch (e) {
-    alert("ভেরিফাই করতে সমস্যা হচ্ছে, আবার চেষ্টা করুন");
+  } catch (err) {
+    alert("ভেরিফাই করতে সমস্যা হচ্ছে। আবার চেষ্টা করুন।");
   }
 }
 
