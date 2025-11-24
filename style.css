@@ -1,0 +1,16 @@
+body { margin:0; background: linear-gradient(135deg, #006400, #32CD32); font-family: 'Kalpurush', Arial; color:white; height:100vh; overflow:hidden; }
+.container { text-align:center; padding-top: 30px; }
+h1 { font-size: 48px; margin:10px; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+.balance { font-size: 32px; font-weight:bold; background:rgba(0,0,0,0.3); padding:15px; border-radius:15px; margin:20px; }
+.per-tap { font-size:22px; color:#ffeb3b; font-weight:bold; }
+.coin img { width: 280px; height: 280px; animation: float 3s infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-25px)} }
+.energy, .level { font-size: 20px; margin:10px; background:rgba(0,0,0,0.2); padding:8px; border-radius:10px; display:inline-block; }
+.withdraw-buttons { margin:30px; }
+.btn { 
+  margin:8px; padding:15px 25px; border:none; border-radius:50px; 
+  font-size:18px; font-weight:bold; color:white; width:80%; max-width:300px;
+}
+.bkash { background:#E21A70; }
+.nagad { background:#FF5A00; }
+.rocket { background:#6A1B9A; }
