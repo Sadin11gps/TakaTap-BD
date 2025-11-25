@@ -1,4 +1,4 @@
-lconst tg = window.Telegram.WebApp;
+const tg = window.Telegram.WebApp;
 tg.ready();
 
 let balance = 0;
@@ -8,8 +8,8 @@ let username = tg.initDataUnsafe?.user?.username || tg.initDataUnsafe?.user?.fir
 let refFrom = new URLSearchParams(window.location.search).get("start");
 const BOT_TOKEN = "7964136906:AAEfh7dxAD4Jd08GDFVWzs9q1_kx667fgyA";
 
-// DOM লোড হলে চালাও
-document.addEventListener('DOMContentLoaded', function() {
+// সবকিছু এখানে সরাসরি চালানো হবে (Telegram WebApp-এর জন্য নিরাপদ)
+(function() {
   // লোড সেভড ডেটা
   const saved = localStorage.getItem("takatap_" + userId);
   if (saved) {
@@ -29,174 +29,128 @@ document.addEventListener('DOMContentLoaded', function() {
   updateBalance();
   updateAdCounter();
   verifyChannel();
-});
+})();
 
-// সব ফাংশন
-function updateBalance() {
-  const balEl = document.getElementById("balance");
-  const wbalEl = document.getElementById("wbalance");
-  const refEl = document.getElementById("refCount");
-  const bonusEl = document.getElementById("refBonus");
-  if (balEl) balEl.textContent = balance.toLocaleString();
-  if (wbalEl) wbalEl.textContent = balance.toLocaleString();
-  if (refEl) refEl.textContent = refCount;
-  if (bonusEl) bonusEl.textContent = (refCount * 50).toLocaleString();
-  localStorage.setItem("takatap_" + userId, JSON.stringify({ balance, refCount }));
-}
+// সব ফাংশন (গ্লোবাল)
+window.updateBalance = function() {
+  document.getElementById("balance")?.innerText = balance.toLocaleString();
+  document.getElementById("wbalance")?.innerText = balance.toLocaleString();
+  document.getElementById("refCount")?.innerText = refCount;
+  document.getElementById("refBonus")?.innerText = (refCount * 50).toLocaleString();
+  localStorage.setItem("takatap_" + userId, JSON.stringify({balance, refCount}));
+};
 
-function shareRef() {
+window.shareRef = function() {
   const link = `https://t.me/TakaTapBD_bot?start=${userId}`;
-  tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent("TakaTap BD – এড + টাস্ক করে পয়েন্ট আর্ন করুন!\n\nশুরু করুন: " + link)}`);
-}
+  tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent("TakaTap BD – পয়েন্ট আর্ন করুন!\nশুরু করুন: " + link)}`);
+};
 
-function openTab(tabId) {
+window.openTab = function(tabId) {
   document.querySelectorAll(".content").forEach(t => t.classList.add("hidden"));
-  const targetTab = document.getElementById(tabId);
-  if (targetTab) targetTab.classList.remove("hidden");
+  document.getElementById(tabId)?.classList.remove("hidden");
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  if (event && event.target) event.target.classList.add("active");
-}
+  event?.target?.classList.add("active");
+};
 
-// এড কাউন্টার
-function updateAdCounter() {
+window.updateAdCounter = function() {
   const today = new Date().toDateString();
   const savedDate = localStorage.getItem("ad_date_" + userId);
-  let count = 0;
-  if (savedDate === today) {
-    count = parseInt(localStorage.getItem("ad_count_" + userId) || "0");
-  } else {
+  let count = parseInt(localStorage.getItem("ad_count_" + userId) || "0");
+  if (savedDate !== today) {
+    count = 0;
     localStorage.setItem("ad_date_" + userId, today);
     localStorage.setItem("ad_count_" + userId, "0");
   }
-  const adCountEl = document.getElementById("adCount");
-  const adBtn = document.getElementById("showAdBtn");
-  if (adCountEl) adCountEl.textContent = count + " / 10";
-  if (adBtn) {
-    if (count >= 10) {
-      adBtn.disabled = true;
-      adBtn.textContent = "আজকের লিমিট শেষ";
-    } else {
-      adBtn.disabled = false;
-      adBtn.textContent = "এড দেখুন (+১০ পয়েন্ট)";
-    }
+  document.getElementById("adCount")?.innerText = count + " / 10";
+  const btn = document.getElementById("showAdBtn");
+  if (btn) {
+    btn.disabled = count >= 10;
+    btn.textContent = count >= 10 ? "আজকের লিমিট শেষ" : "এড দেখুন (+১০ পয়েন্ট)";
   }
-}
+};
 
-// নতুন এড সিস্টেম – SDK চেক + ফলব্যাক
 let countdownInterval = null;
-function showAd() {
+window.showAd = function() {
   const btn = document.getElementById("showAdBtn");
   if (!btn || btn.disabled) return;
 
-  // SDK চেক
-  if (window.show_10232544) {
-    window.show_10232544();
-  } else {
-    // ফলব্যাক: সিম্পল অ্যালার্ট বা লোডিং
-    alert("এড লোড হচ্ছে... ৩০ সেকেন্ড দেখুন।");
-  }
+  if (window.show_10232544) window.show_10232544();
 
   btn.disabled = true;
   btn.textContent = "এড দেখছে... ৩০";
 
-  let seconds = 30;
+  let sec = 30;
   countdownInterval = setInterval(() => {
-    seconds--;
-    btn.textContent = `এড দেখছে... ${seconds}`;
-    if (seconds <= 0) {
+    sec--;
+    btn.textContent = `এড দেখছে... ${sec}`;
+    if (sec <= 0) {
       clearInterval(countdownInterval);
       balance += 10;
       updateBalance();
-
-      let count = parseInt(localStorage.getItem("ad_count_" + userId) || "0") + 1;
-      localStorage.setItem("ad_count_" + userId, count);
+      let c = parseInt(localStorage.getItem("ad_count_" + userId) || "0") + 1;
+      localStorage.setItem("ad_count_" + userId, c);
       updateAdCounter();
-
       btn.textContent = "এড দেখুন (+১০ পয়েন্ট)";
-      alert("+১০ পয়েন্ট যোগ হয়েছে! 🎉");
+      alert("+১০ পয়েন্ট পেয়েছেন! 🎉");
     }
   }, 1000);
+};
 
-  setTimeout(() => {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-      updateAdCounter();
-    }
-  }, 40000);
-}
-
-// রিয়েল জয়েন চেক
-async function checkMembership(taskId, chatUsername, points, button) {
-  const btn = button;
-  if (!btn) return;
+window.checkMembership = async function(taskId, chatUsername, points, button) {
   if (localStorage.getItem("task_done_" + taskId + "_" + userId)) {
-    btn.textContent = "সম্পন্ন ✓";
-    btn.classList.add("done");
+    button.textContent = "সম্পন্ন ✓";
+    button.classList.add("done");
     return;
   }
-
-  btn.textContent = "চেক হচ্ছে...";
-  btn.disabled = true;
+  button.textContent = "চেক হচ্ছে...";
+  button.disabled = true;
 
   try {
     const res = await fetch(`https://api.telegram.org/bot\( {BOT_TOKEN}/getChatMember?chat_id= \){chatUsername}&user_id=${userId}`);
     const data = await res.json();
-
-    if (data.ok && ["member", "administrator", "creator"].includes(data.result.status)) {
+    if (data.ok && ["member","administrator","creator"].includes(data.result.status)) {
       balance += points;
       updateBalance();
       localStorage.setItem("task_done_" + taskId + "_" + userId, "true");
-      btn.textContent = "সম্পন্ন ✓";
-      btn.classList.add("done");
-      alert(`+${points} পয়েন্ট পেয়েছেন! 🎉`);
+      button.textContent = "সম্পন্ন ✓";
+      button.classList.add("done");
+      alert(`+${points} পয়েন্ট পেয়েছেন!`);
     } else {
-      btn.textContent = "চেক করুন";
-      btn.disabled = false;
-      alert("আপনি এখনো জয়েন করেননি!");
+      button.textContent = "চেক করুন";
+      button.disabled = false;
+      alert("জয়েন করেননি!");
     }
-  } catch (e) {
-    btn.textContent = "চেক করুন";
-    btn.disabled = false;
-    alert("ইন্টারনেট সমস্যা। আবার চেষ্টা করুন।");
+  } catch(e) {
+    button.textContent = "চেক করুন";
+    button.disabled = false;
+    alert("ইন্টারনেট সমস্যা।");
   }
-}
+};
 
-// উইথড্র
-function sendWithdraw() {
-  const methodEl = document.getElementById("method");
-  const numberEl = document.getElementById("number");
-  if (!methodEl || !numberEl) return;
-  const method = methodEl.value;
-  const number = numberEl.value.trim();
-  if (!number) return alert("নম্বর / আইডি দিন!");
+window.sendWithdraw = function() {
+  const method = document.getElementById("method")?.value;
+  const number = document.getElementById("number")?.value.trim();
+  if (!number) return alert("নম্বর দিন!");
 
-  let min = 0, reward = "";
-  if (method === "bkash" || method === "nagad") { min = 1200; reward = "১০০ টাকা (২০০ পয়েন্ট ফি)"; }
-  else if (method === "binance") { min = 5000; reward = "$4"; }
-  else if (method === "stars") { min = 2000; reward = "১০০ Telegram Stars"; }
-
+  let min = method === "binance" ? 5000 : method === "stars" ? 2000 : 1200;
   if (balance < min) return alert(`মিনিমাম ${min} পয়েন্ট লাগবে!`);
 
-  const text = `নতুন উইথড্র রিকোয়েস্ট\n\nইউজার: \( {username}\nআইডি: \){userId}\nমেথড: \( {method.toUpperCase()}\nনম্বর: \){number}\nপয়েন্ট: \( {balance}\nরিওয়ার্ড: \){reward}\n\n@TakaTapBD_bot`;
-
+  const text = `নতুন উইথড্র\nইউজার: \( {username}\nID: \){userId}\nমেথড: \( {method.toUpperCase()}\nনম্বর: \){number}\nপয়েন্ট: ${balance}`;
   tg.openTelegramLink(`https://t.me/7702378694?text=${encodeURIComponent(text)}`);
   alert("রিকোয়েস্ট পাঠানো হয়েছে!");
-}
+};
 
-// চ্যানেল ভেরিফাই
 async function verifyChannel() {
   try {
     const res = await fetch(`https://api.telegram.org/bot\( {BOT_TOKEN}/getChatMember?chat_id=@TakaTapBD_Channel&user_id= \){userId}`);
     const data = await res.json();
     if (data.ok && ["member","administrator","creator"].includes(data.result.status)) {
       document.querySelectorAll(".content").forEach(c => c.classList.remove("hidden"));
-      const tabBar = document.querySelector(".tab-bar");
-      if (tabBar) tabBar.style.display = "flex";
+      document.querySelector(".tab-bar").style.display = "flex";
     } else {
       alert("প্রথমে @TakaTapBD_Channel এ জয়েন করুন!");
       tg.openTelegramLink("https://t.me/TakaTapBD_Channel");
     }
-  } catch(e) {
-    alert("ভেরিফাই সমস্যা। আবার চেষ্টা করুন।");
-  }
+  } catch(e) { alert("ভেরিফাই সমস্যা।"); }
 }
+verifyChannel();
